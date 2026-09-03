@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI/ML/DS Tracker — 16 Weeks</title>
+<style>
+  :root{
+    --bg: #0a0a12;
+    --panel: #12121e;
+    --panel-2: #171727;
+    --border: #262638;
+    --text: #e4e2f0;
+    --text-dim: #8a87a3;
+    --text-faint: #56536e;
+    --accent: #9b7bf0;
+    --accent-dim: #6b5599;
+    --accent-glow: rgba(155,123,240,0.35);
+    --done: #5ee6a8;
+    --done-dim: #2d5c48;
+    --rest: #f0b95e;
+    --pet-head: #b3a4f0;
+    --pet-head-top: #a898ee;
+    --pet-head-shade: #a292e8;
+    --pet-tentacle: #8f7fc2;
+    --pet-tentacle-tip: #7a6bb0;
+    --pet-eye: #1a1826;
+    color-scheme: dark;
+  }
+  [data-theme="light"]{
+    --bg: #f4f2fb;
+    --panel: #ffffff;
+    --panel-2: #eeebf9;
+    --border: #dcd7ee;
+    --text: #201d33;
+    --text-dim: #625d7d;
+    --text-faint: #9591ad;
+    --accent: #7c5cd6;
+    --accent-dim: #a88ee8;
+    --accent-glow: rgba(124,92,214,0.25);
+    --done: #1f9a63;
+    --done-dim: #bfe8d4;
+    --rest: #b8811f;
+    --pet-head: #8f7bdb;
+    --pet-head-top: #7c66d0;
+    --pet-head-shade: #6f59c4;
+    --pet-tentacle: #9683d9;
+    --pet-tentacle-tip: #7c66c8;
+    --pet-eye: #201d33;
+    color-scheme: light;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(155,123,240,0.08), transparent 50%),
+      radial-gradient(ellipse at 80% 0%, rgba(94,230,168,0.05), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family: 'JetBrains Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    min-height:100vh;
+    padding:32px 16px 80px;
+    transition: background-color .3s ease, color .3s ease;
+  }
+  body, .week, .pet-line, .bar-track, .item, .box{
+    transition-property: background-color, border-color, color, box-shadow;
+    transition-duration: .3s;
+    transition-timing-function: ease;
+  }
+  .wrap{max-width:760px;margin:0 auto;}
+
+  /* header */
+  .header{
+    display:flex; gap:20px; align-items:flex-start;
+    padding-bottom:24px; margin-bottom:8px;
+  }
+  .pet{
+    width:96px;height:96px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+    cursor:pointer;
+    overflow:visible;
+    background:none;
+    border:none;
+  }
+  .pet-svg{width:72px;height:72px;image-rendering:pixelated;overflow:visible;}
+  .pet-body{transform-origin:22px 24px;}
+
+  /* idle: slow bob + gentle tentacle sway */
+  .pet.idle .pet-body{animation: bob-idle 3.2s ease-in-out infinite;}
+  .pet.idle .tentacle{animation: sway-idle 3.2s ease-in-out infinite;}
+  .pet.idle .tentacle:nth-child(1){animation-delay:0s;}
+  .pet.idle .tentacle:nth-child(2){animation-delay:.15s;}
+  .pet.idle .tentacle:nth-child(3){animation-delay:.3s;}
+  .pet.idle .tentacle:nth-child(4){animation-delay:.45s;}
+  .pet.idle .tentacle:nth-child(5){animation-delay:.6s;}
+
+  /* progressing: perkier bob + faster wiggle, triggered briefly on each check */
+  .pet.progressing .pet-body{animation: bob-active 1.6s ease-in-out infinite;}
+  .pet.progressing .tentacle{animation: sway-active 0.9s ease-in-out infinite;}
+  .pet.progressing .tentacle:nth-child(1){animation-delay:0s;}
+  .pet.progressing .tentacle:nth-child(2){animation-delay:.08s;}
+  .pet.progressing .tentacle:nth-child(3){animation-delay:.16s;}
+  .pet.progressing .tentacle:nth-child(4){animation-delay:.24s;}
+  .pet.progressing .tentacle:nth-child(5){animation-delay:.32s;}
+
+  /* complete: happy float, glow ring */
+  .pet.complete .pet-body{animation: bob-idle 2.4s ease-in-out infinite;}
+  .pet.complete .tentacle{animation: sway-idle 2.4s ease-in-out infinite;}
+  .pet.awake .pet-svg{filter:drop-shadow(0 0 10px var(--accent-glow));}
+  .pet.complete .pet-svg{filter:drop-shadow(0 0 12px rgba(94,230,168,0.5));}
+
+  @keyframes bob-idle{
+    0%,100%{transform:translateY(0);}
+    50%{transform:translateY(-2px);}
+  }
+  @keyframes bob-active{
+    0%,100%{transform:translateY(0) scale(1);}
+    50%{transform:translateY(-4px) scale(1.04);}
+  }
+  @keyframes sway-idle{
+    0%,100%{transform:translateX(0) scaleY(1);}
+    50%{transform:translateX(0.6px) scaleY(0.94);}
+  }
+  @keyframes sway-active{
+    0%,100%{transform:translateX(-1px) scaleY(1);}
+    50%{transform:translateX(1.5px) scaleY(0.82);}
+  }
+
+  .pet .zzz{
+    position:absolute; top:2px; right:6px;
+    font-size:13px; color:var(--text-faint);
+    opacity:0; transition:opacity .4s ease;
+    letter-spacing:2px;
+  }
+  .pet.idle .zzz{opacity:1;}
+
+  .pet .spark{
+    position:absolute; inset:0; pointer-events:none;
+    opacity:0;
+  }
+  .pet.burst .spark{
+    opacity:1;
+    animation: spark-pop .6s ease-out forwards;
+  }
+  @keyframes spark-pop{
+    0%{opacity:1; transform:scale(0.6);}
+    60%{opacity:.8;}
+    100%{opacity:0; transform:scale(1.3);}
+  }
+  h1{font-size:19px;margin:0 0 4px;letter-spacing:.06em;font-weight:700;}
+  .sub{color:var(--text-dim); font-size:13px; line-height:1.5; margin:0;}
+  .pet-line{color:var(--accent); font-size:12.5px; margin-top:6px; min-height:16px; transition:color .4s;}
+  .pet-line.awake{color:var(--done);}
+
+  /* overall progress */
+  .overall{
+    display:flex; align-items:center; gap:14px;
+    margin-bottom:28px;
+  }
+  .overall .label{font-size:11px; letter-spacing:.12em; color:var(--text-faint); flex-shrink:0;}
+  .bar-track{
+    flex:1; height:6px; background:var(--panel-2);
+    border-radius:99px; overflow:hidden; border:1px solid var(--border);
+  }
+  .bar-fill{
+    height:100%; width:0%;
+    background:linear-gradient(90deg, var(--accent-dim), var(--accent));
+    border-radius:99px;
+    transition:width .5s cubic-bezier(.4,0,.2,1);
+  }
+  .overall .pct{font-size:12px; color:var(--accent); width:38px; text-align:right; flex-shrink:0;}
+
+  /* phase divider */
+  .phase-label{
+    font-size:11px; letter-spacing:.14em; color:var(--text-faint);
+    margin:34px 0 10px; padding-left:2px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .phase-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* week card */
+  .week{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    margin-bottom:10px;
+    overflow:hidden;
+    transition:border-color .3s;
+  }
+  .week.complete{border-color:var(--done-dim);}
+  .week-head{
+    display:flex; align-items:center; gap:12px;
+    padding:14px 16px;
+    cursor:pointer; user-select:none;
+  }
+  .wk-badge{
+    font-size:10.5px; font-weight:700; letter-spacing:.04em;
+    color:var(--accent); background:rgba(155,123,240,0.12);
+    border:1px solid var(--accent-dim);
+    padding:3px 8px; border-radius:6px; flex-shrink:0;
+  }
+  .week.complete .wk-badge{color:var(--done); background:rgba(94,230,168,0.1); border-color:var(--done-dim);}
+  .week-title{font-size:14.5px; font-weight:600; flex:1; min-width:0;}
+  .week-count{font-size:12px; color:var(--text-faint); flex-shrink:0; font-variant-numeric:tabular-nums;}
+  .chev{color:var(--text-faint); transition:transform .25s ease; flex-shrink:0; font-size:11px;}
+  .week.open .chev{transform:rotate(90deg);}
+
+  .week-body{
+    max-height:0; overflow:hidden;
+    transition:max-height .35s cubic-bezier(.4,0,.2,1);
+  }
+  .week.open .week-body{max-height:1400px;}
+  .week-note{
+    font-size:12.5px; color:var(--text-dim); line-height:1.55;
+    padding:0 16px 14px 16px; border-left:2px solid var(--accent-dim);
+    margin:0 16px 4px 44px; padding-left:12px;
+  }
+  .items{padding:2px 10px 14px;}
+  .item{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:8px 10px; border-radius:8px;
+    cursor:pointer;
+  }
+  .item:hover{background:var(--panel-2);}
+  .box{
+    width:16px;height:16px;flex-shrink:0;margin-top:2px;
+    border:1.5px solid var(--text-faint);
+    border-radius:4px; position:relative;
+    transition:all .2s ease;
+  }
+  .box.rest-box{border-style:dashed;}
+  .item.checked .box{
+    background:var(--done); border-color:var(--done);
+  }
+  .item.checked .box::after{
+    content:'';
+    position:absolute; left:4px; top:1px;
+    width:4px; height:8px;
+    border:solid #0a0a12;
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  .item-text{font-size:13.2px; line-height:1.5; color:var(--text);}
+  .item.checked .item-text{color:var(--text-faint); text-decoration:line-through; text-decoration-color:var(--text-faint);}
+  .item.rest .item-text{color:var(--rest); font-style:italic;}
+  .item.rest.checked .item-text{color:var(--text-faint);}
+
+  /* milestone tag */
+  .ms{
+    font-size:10px; letter-spacing:.06em; color:#0a0a12;
+    background:var(--accent); padding:1px 6px; border-radius:5px;
+    margin-left:6px; font-weight:700; vertical-align:1px;
+  }
+
+  footer{
+    text-align:center; color:var(--text-faint); font-size:11.5px;
+    margin-top:40px; line-height:1.7;
+  }
+  .reset-btn{
+    background:none; border:1px solid var(--border); color:var(--text-faint);
+    font-family:inherit; font-size:11px; padding:6px 12px; border-radius:7px;
+    cursor:pointer; margin-top:10px;
+  }
+  .reset-btn:hover{border-color:var(--accent-dim); color:var(--accent);}
+
+  /* theme toggle */
+  .theme-toggle{
+    position:fixed; top:20px; right:20px; z-index:50;
+    width:36px; height:36px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition: background-color .3s ease, border-color .3s ease, color .3s ease, transform .15s ease;
+  }
+  .theme-toggle:hover{color:var(--accent); border-color:var(--accent-dim);}
+  .theme-toggle:active{transform:scale(0.92);}
+  .theme-toggle .icon-sun,
+  .theme-toggle .icon-moon{
+    position:absolute;
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  .theme-toggle .icon-moon{opacity:1; transform:rotate(0deg) scale(1);}
+  .theme-toggle .icon-sun{opacity:0; transform:rotate(-90deg) scale(0.6);}
+  [data-theme="light"] .theme-toggle .icon-moon{opacity:0; transform:rotate(90deg) scale(0.6);}
+  [data-theme="light"] .theme-toggle .icon-sun{opacity:1; transform:rotate(0deg) scale(1);}
+  @media (max-width:480px){
+    .theme-toggle{top:14px; right:14px;}
+  }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode" aria-label="Toggle light and dark mode">
+  <svg class="icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="3.5" fill="currentColor"/>
+    <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+      <line x1="8" y1="0.5" x2="8" y2="2.3"/>
+      <line x1="8" y1="13.7" x2="8" y2="15.5"/>
+      <line x1="0.5" y1="8" x2="2.3" y2="8"/>
+      <line x1="13.7" y1="8" x2="15.5" y2="8"/>
+      <line x1="2.6" y1="2.6" x2="3.9" y2="3.9"/>
+      <line x1="12.1" y1="12.1" x2="13.4" y2="13.4"/>
+      <line x1="2.6" y1="13.4" x2="3.9" y2="12.1"/>
+      <line x1="12.1" y1="3.9" x2="13.4" y2="2.6"/>
+    </g>
+  </svg>
+  <svg class="icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M13.5 9.8A6 6 0 1 1 6.2 2.5a5 5 0 0 0 7.3 7.3Z" fill="currentColor"/>
+  </svg>
+</button>
+<div class="wrap">
+
+  <div class="header">
+    <div class="pet idle" id="pet" title="Click me">
+      <svg class="pet-svg" id="pet-svg" viewBox="0 0 22 22" shape-rendering="crispEdges">
+        <g class="pet-body">
+          <!-- tentacles (drawn first, sit behind/below head); each is its own group so
+               animation-delay targets a full tentacle, not a stray rect -->
+          <g class="tentacle" style="transform-origin:5.5px 12px;">
+            <rect x="5"  y="12" width="1" height="3" fill="var(--pet-tentacle)"/>
+            <rect x="5"  y="14" width="1" height="1" fill="var(--pet-tentacle-tip)"/>
+          </g>
+          <g class="tentacle" style="transform-origin:8.5px 12px;">
+            <rect x="8"  y="12" width="1" height="4" fill="var(--pet-tentacle)"/>
+            <rect x="8"  y="15" width="1" height="1" fill="var(--pet-tentacle-tip)"/>
+          </g>
+          <g class="tentacle" style="transform-origin:11.5px 12px;">
+            <rect x="11" y="12" width="1" height="3" fill="var(--pet-tentacle)"/>
+            <rect x="11" y="14" width="1" height="1" fill="var(--pet-tentacle-tip)"/>
+          </g>
+          <g class="tentacle" style="transform-origin:13.5px 12px;">
+            <rect x="13" y="12" width="1" height="4" fill="var(--pet-tentacle)"/>
+            <rect x="13" y="15" width="1" height="1" fill="var(--pet-tentacle-tip)"/>
+          </g>
+          <g class="tentacle" style="transform-origin:16.5px 12px;">
+            <rect x="16" y="12" width="1" height="3" fill="var(--pet-tentacle)"/>
+            <rect x="16" y="14" width="1" height="1" fill="var(--pet-tentacle-tip)"/>
+          </g>
+
+          <!-- head: chamfered-corner pixel block, matches reference silhouette -->
+          <rect x="7"  y="3"  width="8"  height="1" fill="var(--pet-head-top)"/>
+          <rect x="6"  y="4"  width="10" height="8" fill="var(--pet-head)"/>
+          <rect x="5"  y="5"  width="1"  height="6" fill="var(--pet-head)"/>
+          <rect x="16" y="5"  width="1"  height="6" fill="var(--pet-head)"/>
+          <rect x="6"  y="12" width="10" height="1" fill="var(--pet-head-shade)"/>
+
+          <!-- eyes -->
+          <rect class="eye" id="eye-l" x="8"  y="7" width="2" height="2" fill="var(--pet-eye)"/>
+          <rect class="eye" id="eye-r" x="12" y="7" width="2" height="2" fill="var(--pet-eye)"/>
+          <!-- mouth (hidden until complete state) -->
+          <rect class="mouth" id="mouth" x="10" y="9.6" width="2" height="0.8" fill="#6b5ea0" opacity="0"/>
+        </g>
+      </svg>
+      <div class="zzz">z z z</div>
+      <div class="spark">✦</div>
+    </div>
+    <div>
+      <h1>AI / DS / ML — 16-WEEK TRACKER</h1>
+      <p class="sub">Rust-tracker energy, applied to gradients instead of window positions. Check things off as you learn.</p>
+      <div class="pet-line" id="pet-line">Pip is asleep. Check a box to wake her up.</div>
+    </div>
+  </div>
+
+  <div class="overall">
+    <span class="label">PROGRESS</span>
+    <div class="bar-track"><div class="bar-fill" id="bar-fill"></div></div>
+    <span class="pct" id="pct">0%</span>
+  </div>
+
+  <div id="weeks"></div>
+
+  <footer>
+    Your progress saves automatically in this browser.
+    <br>
+    <button class="reset-btn" id="reset-btn">Reset all progress</button>
+  </footer>
+
+</div>
+
+<script>
+const DATA = [
+{ phase: "PHASE 1 — SOFTWARE FOUNDATIONS", weeks: [
+  { title: "Python for someone who already codes", note: "You know Git, CLI, and APIs from JS/TS work — this week moves fast.", items: [
+    "Day 1: Python syntax speedrun — variables, control flow, data structures",
+    "Day 2: Python quirks vs JS/TS — dynamic typing, comprehensions, *args/**kwargs",
+    "Day 3: OOP in Python — classes, dunder methods",
+    "Day 4: Virtual envs (venv/uv), pip, project structure",
+    "Day 5: Rest / buffer",
+    "Day 6: Skim Python type hints (mypy)",
+    "Day 7: MILESTONE — Script pulling data from a public API (HDX / World Bank / ACLED) into local JSON/CSV|milestone|rest0"
+  ]},
+  { title: "NumPy & Pandas", note: "", items: [
+    "Day 1: NumPy arrays, broadcasting",
+    "Day 2: NumPy vectorized ops",
+    "Day 3: Rest / practice problems|rest",
+    "Day 4: Pandas — loading, filtering",
+    "Day 5: Pandas — groupby, joins",
+    "Day 6: Pandas — missing data, outliers",
+    "Day 7: MILESTONE — Clean a messy Somalia-relevant dataset (HDX/World Bank/FAO)|milestone"
+  ]},
+  { title: "SQL & Pipelines", note: "", items: [
+    "Day 1: SQL fundamentals — SELECT, WHERE",
+    "Day 2: SQL — JOIN",
+    "Day 3: Aggregations, subqueries, window functions",
+    "Day 4: Rest|rest",
+    "Day 5: Connect SQLite to Python",
+    "Day 6: Build a basic ETL pipeline",
+    "Day 7: MILESTONE — Pipeline cleaning your Week 2 dataset into SQLite|milestone"
+  ]}
+]},
+{ phase: "PHASE 2 — MATH, VISUALIZATION & EDA", weeks: [
+  { title: "Statistics & Visualization", note: "", items: [
+    "Day 1: Descriptive stats — mean, median, mode",
+    "Day 2: Variance, distributions",
+    "Day 3: Rest|rest",
+    "Day 4: Matplotlib basics",
+    "Day 5: Seaborn basics",
+    "Day 6: Storytelling with charts",
+    "Day 7: MILESTONE — EDA on your Somalia dataset, visualize key trends|milestone"
+  ]},
+  { title: "Linear Algebra", note: "", items: [
+    "Day 1: Vectors, matrices",
+    "Day 2: Matrix multiplication",
+    "Day 3: Rest|rest",
+    "Day 4: Vector spaces",
+    "Day 5: Eigenvalues / eigenvectors — intuition first",
+    "Day 6: Practice problems (3Blue1Brown)",
+    "Day 7: Practice problems, review"
+  ]},
+  { title: "Calculus & Optimization", note: "", items: [
+    "Day 1: Derivatives",
+    "Day 2: Gradients, chain rule",
+    "Day 3: Rest|rest",
+    "Day 4: Gradient Descent theory",
+    "Day 5: Implement gradient descent from scratch",
+    "Day 6: Buffer / review Phase 2",
+    "Day 7: Buffer / review Phase 2"
+  ]}
+]},
+{ phase: "PHASE 3 — CORE MACHINE LEARNING", weeks: [
+  { title: "Regression", note: "", items: [
+    "Day 1: Linear Regression",
+    "Day 2: Cost functions",
+    "Day 3: Metrics — RMSE, MAE, R²",
+    "Day 4: Rest|rest",
+    "Day 5: PROJECT — Somalia-relevant regression (market prices / rainfall-crop yield)|milestone",
+    "Day 6: Project — feature engineering",
+    "Day 7: Project — write up results"
+  ]},
+  { title: "Classification", note: "", items: [
+    "Day 1: Logistic Regression",
+    "Day 2: K-Nearest Neighbors",
+    "Day 3: Precision, Recall, F1 — why they beat accuracy",
+    "Day 4: Rest|rest",
+    "Day 5: PROJECT — Risk classifier (flood/drought or fraud signals)|milestone",
+    "Day 6: Project — evaluate & tune",
+    "Day 7: Project — write up results"
+  ]},
+  { title: "Ensembles & Boosting", note: "", items: [
+    "Day 1: Decision Trees",
+    "Day 2: Random Forests",
+    "Day 3: Gradient Boosting — XGBoost/LightGBM",
+    "Day 4: More boosting practice",
+    "Day 5: Rest|rest",
+    "Day 6: PROJECT — Apply SMOTE for class-imbalanced fraud/anomaly data|milestone",
+    "Day 7: Project — evaluate & write up"
+  ]},
+  { title: "Unsupervised Learning", note: "", items: [
+    "Day 1: K-Means Clustering",
+    "Day 2: Hierarchical Clustering",
+    "Day 3: Rest|rest",
+    "Day 4: PCA for dimensionality reduction",
+    "Day 5: PCA practice",
+    "Day 6: PROJECT — Cluster regions by need/access indicators (HDX)|milestone",
+    "Day 7: Project — write up results"
+  ]},
+  { title: "Buffer / Consolidation", note: "This is your GitHub 'build in public' week.", items: [
+    "Day 1: Revisit weakest topic from Weeks 7–10",
+    "Day 2: Revisit weakest topic (cont.)",
+    "Day 3: Revisit weakest topic (cont.)",
+    "Day 4: Polish one project's README",
+    "Day 5: Clean up repo structure",
+    "Day 6: Rest|rest",
+    "Day 7: Rest|rest"
+  ]}
+]},
+{ phase: "PHASE 4 — MODERN AI & SPECIALIZATION", weeks: [
+  { title: "Deep Learning Basics", note: "", items: [
+    "Day 1: Neural net architecture, layers",
+    "Day 2: Activation functions, backprop intuition",
+    "Day 3: Rest|rest",
+    "Day 4: PyTorch or TensorFlow setup",
+    "Day 5: Build a small classifier",
+    "Day 6: PROJECT — MNIST digit recognizer (CNN)|milestone",
+    "Day 7: Project — write up results"
+  ]},
+  { title: "NLP Foundations", note: "", items: [
+    "Day 1: Tokenization",
+    "Day 2: Embeddings",
+    "Day 3: TF-IDF",
+    "Day 4: Rest|rest",
+    "Day 5: Buffer / practice",
+    "Day 6: Intro to Transformer architecture (conceptual)",
+    "Day 7: Intro to Transformers (cont.)"
+  ]},
+  { title: "NLP & LLMs — Somali language project", note: "This one can seed your actual research paper.", items: [
+    "Day 1: Hugging Face basics — pipelines",
+    "Day 2: Hugging Face — pretrained models",
+    "Day 3: Rest|rest",
+    "Day 4: Explore existing Somali NLP resources",
+    "Day 5: PROJECT — Somali-language text classification/sentiment task|milestone",
+    "Day 6: Project — evaluate & iterate",
+    "Day 7: Project — write up results"
+  ]}
+]},
+{ phase: "PHASE 5 — DEPLOYMENT", weeks: [
+  { title: "MLOps", note: "", items: [
+    "Day 1: Wrap a model in FastAPI",
+    "Day 2: FastAPI — request/response handling",
+    "Day 3: Rest|rest",
+    "Day 4: Docker basics for your model",
+    "Day 5: Dockerize your model",
+    "Day 6: MLflow for experiment tracking",
+    "Day 7: MLflow practice"
+  ]},
+  { title: "Capstone", note: "Pick your strongest project — ideally the Somali NLP or risk-classification one.", items: [
+    "Day 1: Select & scope capstone project",
+    "Day 2: Productionize the model",
+    "Day 3: Rest|rest",
+    "Day 4: Deploy Streamlit app + FastAPI backend",
+    "Day 5: Deploy (cont.) — test end-to-end",
+    "Day 6: Write GitHub README with research/business impact framing",
+    "Day 7: MILESTONE — Reflect: this becomes the empirical backbone of your Somalia paper|milestone"
+  ]}
+]}
+];
+
+const STORAGE_KEY = 'checked-items';
+let checked = {};
+
+function itemId(wi, ii){ return wi + '-' + ii; }
+
+function parseItem(raw){
+  const parts = raw.split('|');
+  return { text: parts[0], milestone: parts.includes('milestone'), rest: parts.includes('rest') };
+}
+
+let flatWeekIndex = 0;
+const weekMeta = [];
+
+function render(){
+  const container = document.getElementById('weeks');
+  container.innerHTML = '';
+  flatWeekIndex = 0;
+  weekMeta.length = 0;
+
+  DATA.forEach(phase => {
+    const label = document.createElement('div');
+    label.className = 'phase-label';
+    label.textContent = phase.phase;
+    container.appendChild(label);
+
+    phase.weeks.forEach(week => {
+      const wIdx = flatWeekIndex++;
+      const items = week.items.map(parseItem);
+      weekMeta.push({ total: items.length });
+
+      const el = document.createElement('div');
+      el.className = 'week';
+      el.dataset.wi = wIdx;
+
+      const doneCount = items.filter((_, ii) => checked[itemId(wIdx, ii)]).length;
+      if(doneCount === items.length) el.classList.add('complete');
+
+      const head = document.createElement('div');
+      head.className = 'week-head';
+      head.innerHTML = `
+        <span class="wk-badge">WK ${wIdx+1}</span>
+        <span class="week-title">${week.title}</span>
+        <span class="week-count">${doneCount}/${items.length}</span>
+        <span class="chev">▸</span>
+      `;
+      head.addEventListener('click', () => {
+        el.classList.toggle('open');
+      });
+      el.appendChild(head);
+
+      const body = document.createElement('div');
+      body.className = 'week-body';
+
+      if(week.note){
+        const note = document.createElement('div');
+        note.className = 'week-note';
+        note.textContent = week.note;
+        body.appendChild(note);
+      }
+
+      const itemsWrap = document.createElement('div');
+      itemsWrap.className = 'items';
+
+      items.forEach((it, ii) => {
+        const id = itemId(wIdx, ii);
+        const row = document.createElement('div');
+        row.className = 'item' + (checked[id] ? ' checked' : '') + (it.rest ? ' rest' : '');
+        row.innerHTML = `
+          <div class="box${it.rest ? ' rest-box' : ''}"></div>
+          <div class="item-text">${it.text}${it.milestone ? '<span class="ms">MILESTONE</span>' : ''}</div>
+        `;
+        row.addEventListener('click', () => toggleItem(id, wIdx));
+        itemsWrap.appendChild(row);
+      });
+
+      body.appendChild(itemsWrap);
+      el.appendChild(body);
+      container.appendChild(el);
+    });
+  });
+
+  updateOverall();
+}
+
+async function toggleItem(id, wIdx){
+  const turningOn = !checked[id];
+  checked[id] = turningOn;
+  await saveState();
+  render();
+  // re-open the week that was just interacted with
+  const el = document.querySelector(`.week[data-wi="${wIdx}"]`);
+  if(el) el.classList.add('open');
+  updatePet(undefined, turningOn);
+}
+
+function updateOverall(){
+  const totalItems = DATA.reduce((s, p) => s + p.weeks.reduce((s2, w) => s2 + w.items.length, 0), 0);
+  const doneItems = Object.values(checked).filter(Boolean).length;
+  const pct = totalItems ? Math.round((doneItems / totalItems) * 100) : 0;
+  document.getElementById('bar-fill').style.width = pct + '%';
+  document.getElementById('pct').textContent = pct + '%';
+  updatePet(pct, false);
+}
+
+const petLines = [
+  [0,   "Pip is asleep. Check a box to wake her up."],
+  [1,   "Pip blinks awake. Small steps."],
+  [15,  "Pip is stretching. Keep going."],
+  [35,  "Pip is alert and taking notes."],
+  [55,  "Pip is genuinely impressed."],
+  [75,  "Pip believes in the capstone now."],
+  [95,  "Pip is basically your research assistant."],
+  [100, "Pip says: ship the paper."]
+];
+
+let burstTimeout = null;
+
+// states: "idle" (0%, or no recent activity), "progressing" (briefly, right after
+// a check-off, and continuously while >0% and <100%), "complete" (100%)
+function setPetState(state){
+  const pet = document.getElementById('pet');
+  pet.classList.remove('idle','progressing','complete');
+  pet.classList.add(state);
+}
+
+function updatePet(pctOverride, justChecked){
+  const totalItems = DATA.reduce((s, p) => s + p.weeks.reduce((s2, w) => s2 + w.items.length, 0), 0);
+  const doneItems = Object.values(checked).filter(Boolean).length;
+  const pct = pctOverride !== undefined ? pctOverride : (totalItems ? Math.round((doneItems / totalItems) * 100) : 0);
+
+  const pet = document.getElementById('pet');
+  const line = document.getElementById('pet-line');
+  const mouth = document.getElementById('mouth');
+  const eyeL = document.getElementById('eye-l');
+  const eyeR = document.getElementById('eye-r');
+
+  let msg = petLines[0][1];
+  for(const [threshold, text] of petLines){
+    if(pct >= threshold) msg = text;
+  }
+  line.textContent = msg;
+  line.classList.toggle('awake', pct > 0);
+  pet.classList.toggle('awake', pct > 0);
+
+  if(pct >= 100){
+    setPetState('complete');
+    mouth.setAttribute('opacity','1');
+    mouth.setAttribute('fill','#5ee6a8');
+    eyeL.setAttribute('height','1.4'); eyeL.setAttribute('y','7.3');
+    eyeR.setAttribute('height','1.4'); eyeR.setAttribute('y','7.3');
+  } else if(pct > 0){
+    mouth.setAttribute('opacity','0');
+    eyeL.setAttribute('height','2'); eyeL.setAttribute('y','7');
+    eyeR.setAttribute('height','2'); eyeR.setAttribute('y','7');
+    if(justChecked){
+      // brief energetic burst right after a task is checked off
+      setPetState('progressing');
+      pet.classList.add('burst');
+      clearTimeout(burstTimeout);
+      burstTimeout = setTimeout(() => {
+        pet.classList.remove('burst');
+        setPetState('progressing');
+      }, 650);
+      clearTimeout(pet._settleTimeout);
+      pet._settleTimeout = setTimeout(() => setPetState('idle'), 2600);
+    } else {
+      setPetState('idle');
+    }
+  } else {
+    setPetState('idle');
+    mouth.setAttribute('opacity','0');
+    eyeL.setAttribute('height','2'); eyeL.setAttribute('y','7');
+    eyeR.setAttribute('height','2'); eyeR.setAttribute('y','7');
+  }
+}
+
+// poke interaction: clicking Pip gives a little acknowledgement
+document.getElementById('pet').addEventListener('click', () => {
+  const pet = document.getElementById('pet');
+  if(pet.classList.contains('complete')) return;
+  const totalItems = DATA.reduce((s, p) => s + p.weeks.reduce((s2, w) => s2 + w.items.length, 0), 0);
+  const doneItems = Object.values(checked).filter(Boolean).length;
+  if(doneItems === 0) return; // stays asleep until first task
+  setPetState('progressing');
+  clearTimeout(pet._settleTimeout);
+  pet._settleTimeout = setTimeout(() => {
+    const pct = totalItems ? Math.round((doneItems / totalItems) * 100) : 0;
+    if(pct < 100) setPetState('idle');
+  }, 1400);
+});
+
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(checked), false);
+  }catch(e){ console.error('save failed', e); }
+}
+
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value) checked = JSON.parse(res.value);
+  }catch(e){
+    checked = {};
+  }
+}
+
+const THEME_KEY = 'theme-preference';
+
+function applyTheme(theme){
+  if(theme === 'light'){
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+
+async function saveTheme(theme){
+  try{
+    await window.storage.set(THEME_KEY, theme, false);
+  }catch(e){ console.error('theme save failed', e); }
+}
+
+async function loadTheme(){
+  try{
+    const res = await window.storage.get(THEME_KEY, false);
+    if(res && res.value) return res.value;
+  }catch(e){ /* no saved preference yet */ }
+  // fall back to system preference
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+}
+
+document.getElementById('theme-toggle').addEventListener('click', async () => {
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+  const next = isLight ? 'dark' : 'light';
+  applyTheme(next);
+  await saveTheme(next);
+});
+
+document.getElementById('reset-btn').addEventListener('click', async () => {
+  checked = {};
+  await saveState();
+  render();
+});
+
+(async function init(){
+  const theme = await loadTheme();
+  applyTheme(theme);
+  await loadState();
+  render();
+})();
+</script>
+</body>
+</html>
