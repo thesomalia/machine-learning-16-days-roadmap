@@ -2,7 +2,7 @@
 
 > *Rust-tracker energy, applied to gradients instead of window positions. Check things off as you learn.*
 
-This repository contains the complete **16-Week AI/ML/DS Study Roadmap** and an interactive, single-page tracker web app ([`study-tracker.html`](file:///Users/elkenzi/learn/ml/study-tracker.html)).
+This repository contains the complete **16-Week AI/ML/DS Study Roadmap** and an interactive, single-page tracker web app ([`index.html`](file:///Users/elkenzi/learn/ml/index.html)).
 
 ---
 
@@ -10,7 +10,7 @@ This repository contains the complete **16-Week AI/ML/DS Study Roadmap** and an 
 
 The roadmap is structured into **5 distinct phases** across **16 weeks**, designed day-by-day with milestone projects, rest days, and buffer periods.
 
-- **Interactive Tracker**: Open [`study-tracker.html`](file:///Users/elkenzi/learn/ml/study-tracker.html) directly in your browser.
+- **Interactive Tracker**: Open [`index.html`](file:///Users/elkenzi/learn/ml/index.html) directly in your browser.
 - **Features**: Automatic progress saving via browser storage, dark/light theme switching, and **Pip** the pixel-art mascot companion.
 
 ---
@@ -199,10 +199,10 @@ The roadmap is structured into **5 distinct phases** across **16 weeks**, design
 
 ## 💻 How to Use the Interactive Tracker
 
-Open [`study-tracker.html`](file:///Users/elkenzi/learn/ml/study-tracker.html) in your browser to interactively check off tasks day by day:
+Open [`index.html`](file:///Users/elkenzi/learn/ml/index.html) in your browser to interactively check off tasks day by day:
 
 ```bash
-open study-tracker.html
+open index.html
 ```
 
 Progress automatically persists in your browser storage.

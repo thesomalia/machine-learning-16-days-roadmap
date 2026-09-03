@@ -2,6 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('theme-preference');
+      if (t === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    } catch(e){}
+  })();
+</script>
 <title>AI/ML/DS Tracker — 16 Weeks</title>
 <style>
   :root{
@@ -730,16 +740,38 @@ document.getElementById('pet').addEventListener('click', () => {
 
 async function saveState(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(checked), false);
-  }catch(e){ console.error('save failed', e); }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checked));
+    }
+  }catch(e){ console.error('localStorage save failed', e); }
+  try{
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set(STORAGE_KEY, JSON.stringify(checked), false);
+    }
+  }catch(e){}
 }
 
 async function loadState(){
+  let loaded = false;
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && res.value) checked = JSON.parse(res.value);
-  }catch(e){
-    checked = {};
+    if (typeof localStorage !== 'undefined') {
+      const val = localStorage.getItem(STORAGE_KEY);
+      if (val !== null) {
+        checked = JSON.parse(val);
+        loaded = true;
+      }
+    }
+  }catch(e){ console.error('localStorage load failed', e); }
+  
+  if (!loaded) {
+    try{
+      if (window.storage && typeof window.storage.get === 'function') {
+        const res = await window.storage.get(STORAGE_KEY, false);
+        if (res && res.value) checked = JSON.parse(res.value);
+      }
+    }catch(e){
+      checked = {};
+    }
   }
 }
 
@@ -755,16 +787,30 @@ function applyTheme(theme){
 
 async function saveTheme(theme){
   try{
-    await window.storage.set(THEME_KEY, theme, false);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(THEME_KEY, theme);
+    }
   }catch(e){ console.error('theme save failed', e); }
+  try{
+    if (window.storage && typeof window.storage.set === 'function') {
+      await window.storage.set(THEME_KEY, theme, false);
+    }
+  }catch(e){}
 }
 
 async function loadTheme(){
   try{
-    const res = await window.storage.get(THEME_KEY, false);
-    if(res && res.value) return res.value;
-  }catch(e){ /* no saved preference yet */ }
-  // fall back to system preference
+    if (typeof localStorage !== 'undefined') {
+      const val = localStorage.getItem(THEME_KEY);
+      if (val) return val;
+    }
+  }catch(e){}
+  try{
+    if (window.storage && typeof window.storage.get === 'function') {
+      const res = await window.storage.get(THEME_KEY, false);
+      if (res && res.value) return res.value;
+    }
+  }catch(e){}
   return (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
 }
 
@@ -776,9 +822,11 @@ document.getElementById('theme-toggle').addEventListener('click', async () => {
 });
 
 document.getElementById('reset-btn').addEventListener('click', async () => {
-  checked = {};
-  await saveState();
-  render();
+  if (confirm('Are you sure you want to reset all your progress?')) {
+    checked = {};
+    await saveState();
+    render();
+  }
 });
 
 (async function init(){
